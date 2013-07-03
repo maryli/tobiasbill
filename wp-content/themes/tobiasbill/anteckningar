@@ -6,3 +6,7 @@ Har ändrat text till svenska i filen "voting-types.php" på rad 110, 124 och 17
 "Rate this image:" -> "Ranka den här bilden"
 "Rate" -> "Skicka"
 "Thank you for casting your vote." -> "Tack för din röst."
+
+SELECT vote FROM wp_nggv_votes WHERE pid=3 ORDER BY id ASC LIMIT 1
+
+SELECT vote FROM wp_nggv_votes WHERE pid=3 ORDER BY dateadded ASC LIMIT 1

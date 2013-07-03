@@ -148,7 +148,7 @@ class nggvGalleryVote {
 		
 		return $out;
 	}
-	
+	//ändrat avg till last på två ställen
 	public static function imageVoteResultsDropDown($nggv, $options) {
 		$return = array();
 		if($options->voting_type == 1) {
