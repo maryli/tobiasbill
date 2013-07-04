@@ -55,6 +55,14 @@ body { }
       margin-bottom: 0;
    }
 
+   .ngg-gallery-thumbnail-box{
+      margin-top: 20px;
+   }
+
+   form{
+      margin: 0 0 15px;
+   }
+
 
 
 

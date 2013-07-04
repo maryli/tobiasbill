@@ -86,11 +86,20 @@ class nggvGalleryVote {
 		return $out;
 	}
 	
-	public static function galleryVoteResultsDropDown($nggv, $options) {
+	/*public static function galleryVoteResultsDropDown($nggv, $options) {
 		$return = array();
 		if($options->voting_type == 1) {
 			$results = $nggv->getVotingResults($options->gid, array('avg'=>true));
 			$return['form'] .= nggVoting::msg('Current Average:').' '.round(($results['avg'] / 10), 1).' / 10';
+		}
+		return $return;
+	}*/
+
+	public static function galleryVoteResultsDropDown($nggv, $options) {
+		$return = array();
+		if($options->voting_type == 1) {
+			$results = $nggv->getVotingResults($options->gid, array('last'=>true));
+			$return['form'] .= nggVoting::msg('Din röst: ') . $results['last']->vote / 10 . '/10';
 		}
 		return $return;
 	}
@@ -107,7 +116,7 @@ class nggvGalleryVote {
 			$return['form'] .= '<input type="text" class="nggv-gallery-pot" name="nggv[required_pot_field]" value="" />'; //honey pot attempt, not sure how useful this will be. I will consider better options for cash :)
 			$return['form'] .= '<input type="hidden" name="nggv[vote_pid_id]" value="'.$options->pid.'" />';
 			$return['form'] .= '<input type="hidden" name="nggv[vote_criteria_id]" value="'.$options->criteria_id.'" />';
-			$return['form'] .= '<label forid="nggv_rating">'.nggVoting::msg('Ranka den här bilden').'</label>';
+			$return['form'] .= '<label forid="nggv_rating">'.nggVoting::msg('Gör ditt urval. 10 = bäst.').'</label>';
 			$return['form'] .= '<select id="nggv_rating" name="nggv[vote]">';
 			$return['form'] .= '<option value="0">0</option>';
 			$return['form'] .= '<option value="10">1</option>';
@@ -148,12 +157,22 @@ class nggvGalleryVote {
 		
 		return $out;
 	}
-	//ändrat avg till last på två ställen
+	//funktionen nedan är original och ger medeltal av rösterna
+	/*public static function imageVoteResultsDropDown($nggv, $options) {
+		$return = array();
+		if($options->voting_type == 1) {
+			$results = $nggv->getImageVotingResults(array('pid'=>$options->pid, 'criteria_id'=>$options->criteria_id), array('avg'=>true));
+			$return['form'] = nggVoting::msg('Current Average:').' '.round(($results['avg'] / 10), 1).' / 10';
+		}
+		return $return;
+	}*/
+
+	//ändrat avg till last för att få ut senaste rösten
 	public static function imageVoteResultsDropDown($nggv, $options) {
 		$return = array();
 		if($options->voting_type == 1) {
 			$results = $nggv->getImageVotingResults(array('pid'=>$options->pid, 'criteria_id'=>$options->criteria_id), array('last'=>true));
-			$return['form'] = nggVoting::msg('Current Average:').' '.round(($results['last'] / 10), 1).' / 10';
+			$return['form'] = 'Din röst: ' . $results['last']->vote / 10 . '/10';
 		}
 		return $return;
 	}

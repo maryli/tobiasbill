@@ -202,8 +202,9 @@ class nggVoting {
 				
 				$results = array();
 
+				//lagt till funktion som hämtar ut den senaste rösten
 				if(isset($type["last"]) && $type["last"]) {
-					$last = $wpdb->get_row("SELECT vote FROM ".$wpdb->prefix."nggv_votes WHERE pid= '".$wpdb->escape($pid)."' ORDER BY dateadded ASC LIMIT 1");
+					$last = $wpdb->get_row("SELECT vote FROM ".$wpdb->prefix."nggv_votes WHERE pid= '".$wpdb->escape($pid)."' AND criteria_id = '".$wpdb->escape($criteriaId)."' ORDER BY dateadded DESC LIMIT 1");
 					$results['last'] = $last;
 				}
 				
@@ -260,11 +261,17 @@ class nggVoting {
 		 * @author Shaun <shaunalberts@gmail.com>
 		 * @return array("avg"=>double average for gallery, "list"=>array of objects of all votes of the gallery, "number"=>integer the number of votes for the gallery)
 		 */
-		function getVotingResults($gid, $type=array('avg'=>true, 'list'=>true, 'number'=>true, 'likes'=>true, 'dislikes'=>true)) {
+		function getVotingResults($gid, $type=array('last'=>true, 'avg'=>true, 'list'=>true, 'number'=>true, 'likes'=>true, 'dislikes'=>true)) {
 			if(is_numeric($gid)) {
 				global $wpdb;
 				
 				$results = array();
+
+				//lagt till funktion som hämtar ut den senaste rösten
+				if(isset($type["last"]) && $type["last"]) {
+					$last = $wpdb->get_row("SELECT vote FROM ".$wpdb->prefix."nggv_votes WHERE pid= '".$wpdb->escape($pid)."' ORDER BY dateadded DESC LIMIT 1");
+					$results['last'] = $last;
+				}
 								
 				if(isset($type['avg']) && $type['avg']) {
 					$avg = $wpdb->get_row('SELECT SUM(vote) / COUNT(vote) AS avg FROM '.$wpdb->prefix.'nggv_votes WHERE gid = "'.$wpdb->escape($gid).'" GROUP BY gid');
@@ -1446,9 +1453,15 @@ class nggVoting {
 						echo $results['dislikes'] == 1 ? 'Dislike' : 'Dislikes';
 						echo '</a><br />';
 						echo '<a href="#" class="nggv_more_results_image" id="nggv_more_results_image_'.$pid.'" data-criteria_id="'.$val->id.'">('.($results['number'] ? $results['number'] : '0').' votes cast)</a>';
-					}else if(isset($opts->voting_type) && $opts->voting_type == 1){
+					/*}else if(isset($opts->voting_type) && $opts->voting_type == 1){
 						$results = $this->getImageVotingResults(array('pid'=>$pid, 'criteria_id'=>$val->id), array('avg'=>true, 'num'=>true));
 						echo 'Current Avg: '.round(($results['avg'] / 10), 1).' / 10<br />';
+						echo '<a href="#" class="nggv_more_results_image" id="nggv_more_results_image_'.$pid.'" data-criteria_id="'.$val->id.'">('.($results['number'] ? $results['number'] : '0').' votes cast)</a>';
+					}*/
+					//ny funktion för att visa ut senaste röst i admin
+					}else if(isset($opts->voting_type) && $opts->voting_type == 1){
+						$results = $this->getImageVotingResults(array('pid'=>$pid, 'criteria_id'=>$val->id), array('last'=>true, 'avg'=>true, 'num'=>true));
+						echo 'Latest vote: '. $results['last']->vote / 10 . '/10<br/>';
 						echo '<a href="#" class="nggv_more_results_image" id="nggv_more_results_image_'.$pid.'" data-criteria_id="'.$val->id.'">('.($results['number'] ? $results['number'] : '0').' votes cast)</a>';
 					}
 					echo do_action('nggv_image_options_bottom', $this, $opts);
@@ -1713,8 +1726,9 @@ class nggVoting {
 				}
 			}
 		}
-		
-		function getImageVoteMarkup($options) {
+
+		//original-funktion
+		/*function getImageVoteMarkup($options) {
 			$pid = $options->pid;
 			$criteriaId = $options->criteria_id;
 			$voteFuncs = $this->types[$options->voting_type]['imageCallback'];
@@ -1744,7 +1758,46 @@ class nggVoting {
 				}
 			}
 			return $form;
+		}*/
+
+		//ny funktion för att visa ut både röstresultat och formulär
+		function getImageVoteMarkup($options) {
+			$pid = $options->pid;
+			$criteriaId = $options->criteria_id;
+			$voteFuncs = $this->types[$options->voting_type]['imageCallback'];
+			
+			//is there a vote happing for this pid right now?
+			$votedOrErr = isset($this->initCatchVote[$pid][$criteriaId]['result']) ? $this->initCatchVote[$pid][$criteriaId]['result'] : '';
+			
+			$canVote = $this->canVoteImage($pid, $criteriaId);
+
+			$form = array();
+			//if((($canVote === true) && !$votedOrErr) { //they can vote, show the form
+
+				//$return = apply_filters('nggv_gallery_vote_form', $nggv, $options);
+				$form = @call_user_func_array(array($voteFuncs['class'], $voteFuncs['form']), array($this, $options));
+
+			//}else{ //ok, they cant vote.  what next?
+				if($options->enable) {
+					if($canVote === 'NOT LOGGED IN') { //the api wants them to login to vote
+						$form['form'] = nggVoting::msg('Only registered users can vote. Please login to cast your vote.');
+					}else if($canVote === 'USER HAS VOTED'
+						|| $canVote === 'IP HAS VOTED' || $canVote == 'IP HAS VOTED TODAY' || $canVote == 'IP HAS VOTED THIS WEEK' || $canVote == 'IP HAS VOTED THIS MONTH' || $canVote == 'IP HAS VOTED THIS YEAR'
+						|| $canVote === 'USER HAS VOTED' || $canVote == 'USER HAS VOTED TODAY' || $canVote == 'USER HAS VOTED THIS WEEK' || $canVote == 'USER HAS VOTED THIS MONTH' || $canVote == 'USER HAS VOTED THIS YEAR'
+						|| $canVote === 'COOKIE HAS VOTED' || $canVote == 'COOKIE HAS VOTED TODAY' || $canVote == 'COOKIE HAS VOTED THIS WEEK' || $canVote == 'COOKIE HAS VOTED THIS MONTH' || $canVote == 'COOKIE HAS VOTED THIS YEAR'
+						|| $canVote === true) { //api tells us they have voted, can they see results? (canVote will be true if they have just voted successfully)
+						if($options->user_results) { //yes! show it
+							$f = @call_user_func_array(array($voteFuncs['class'], $voteFuncs['results']), array($this, $options));
+							$form['form'].= $f['form'];
+						}else{ //nope, but thanks for trying
+							$form['form'] = nggVoting::msg('Tack för din röst.');
+						}
+					}
+				}
+			//}
+			return $form;
 		}
+
 		
 		function imageVoteForm($pid, $criteriaId) {
 			if(!is_numeric($pid)) {
