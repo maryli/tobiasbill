@@ -10,6 +10,9 @@ Har ändrat text till svenska i filen "voting-types.php" på rad 119, 133 i voti
 SELECT vote FROM wp_nggv_votes WHERE pid=3 ORDER BY dateadded DESC LIMIT 1
 
 
+Lagt till sidan page-gallery.php i config.php så att den inte visas med sidebar
+
+
 Tillagda/ändrade funktioner i plugin NextGEN Gallery Voting
 
 //rad 170 i voting-types
